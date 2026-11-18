@@ -1,0 +1,124 @@
+  .primary{width:100%;border:1px solid #f26470;background:#bd273b;color:white;padding:13px 16px;text-transform:uppercase;letter-spacing:.17em;font-size:11px;font-weight:700;cursor:pointer;box-shadow:0 0 24px #c71e3330;transition:.15s}
+  .primary:hover{background:#e0394c;box-shadow:0 0 30px #ff35495c;transform:translateY(-1px)}
+  .tiny{font-size:10px;color:#727d8b;text-align:center;margin:13px 0 0;letter-spacing:.05em}
+  .quiz-card{width:min(500px,100%);padding:27px 30px}.quiz-card h2{font:500 30px/1.1 Georgia,serif;margin:0 0 8px}.quiz-card .prompt{font-size:14px;color:#d4d8dc;line-height:1.55;margin:0 0 18px}.word-choices{display:grid;gap:8px}.word-choice{display:flex;gap:12px;align-items:center;text-align:left;padding:12px 14px;background:#131923;border:1px solid #3b4551;cursor:pointer;font-size:14px;transition:.15s}.word-choice:hover,.word-choice:focus-visible{outline:0;background:#202833;border-color:var(--cyan);transform:translateX(3px)}.word-choice .num{display:grid;place-items:center;width:24px;height:24px;border:1px solid #69727f;color:#a6f6ea;font-size:11px}.quiz-note{font-size:10px;color:#818b98;margin:13px 0 0}
+  .scare{position:absolute;inset:0;z-index:9;display:grid;place-items:center;background:#080205;opacity:0;pointer-events:none;transition:opacity .06s}.scare.show{opacity:1;animation:shake .12s infinite}.scare svg{width:min(78%,640px);height:88%;filter:drop-shadow(0 0 30px #fc142e)}.scare .flash{position:absolute;inset:0;background:#fb1833;mix-blend-mode:screen;opacity:.12;animation:flash .12s infinite alternate}
+  @keyframes shake{0%{transform:translate(4px,-3px) scale(1.025)}50%{transform:translate(-5px,2px) scale(1.045)}100%{transform:translate(2px,4px) scale(1.015)}}@keyframes flash{to{opacity:.38}}
+  .toast{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#0a1017ed;border:1px solid #718078;padding:13px 20px;text-align:center;font-family:Georgia,serif;letter-spacing:.04em;z-index:4;opacity:0;transition:opacity .2s;pointer-events:none;box-shadow:0 10px 40px #000}.toast.show{opacity:1}
+  .mute{position:absolute;right:23px;bottom:44px;border:1px solid #454d59;background:#0a0e16c9;color:#c4cad2;font-size:10px;letter-spacing:.1em;padding:7px 9px;cursor:pointer;z-index:3}.mute:hover{border-color:#a9b5c0}
+  @media(max-width:650px){.topbar{padding:13px 14px}.brand{font-size:9px}.brand b{font-size:14px}.progress-box{width:120px}.floor-chip{top:71px;left:14px;font-size:8px;padding:6px 8px}.checkpoint-chip{top:71px;right:14px;font-size:8px}.bottom-hint{font-size:8px;bottom:11px}.mute{right:12px;bottom:35px}.card{padding:24px 23px}.controls{font-size:10px}}
+</style>
+</head>
+<body>
+<main class="game-shell" aria-label="The Word Tower horror obby">
+  <canvas id="game" width="960" height="640" aria-label="Game area"></canvas>
+  <div class="vignette"></div><div class="scanlines"></div>
+  <header class="topbar"><div class="brand">A vertical nightmare<b>THE WORD TOWER</b></div><div class="progress-box"><div class="progress-label"><span>Ascent</span><span id="progressText">0%</span></div><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div></div></header>
+  <div class="floor-chip" id="floorChip">Floor 01 · The Noun Wing</div><div class="checkpoint-chip" id="checkpointChip">Checkpoint 0 / 5</div>
+  <div class="bottom-hint">MOVE A / D OR ← / → &nbsp; · &nbsp; JUMP SPACE / W / ↑ &nbsp; · &nbsp; WORD LOCKS 1–3</div>
+  <button class="mute" id="soundButton" type="button" aria-label="Toggle sound">SOUND: ON</button>
+  <div class="toast" id="toast"></div>
+  <section class="layer" id="startLayer">
+    <div class="card"><p class="eyebrow">A horror obby about words</p><h1>Reach the top.<br>Keep your words.</h1><p class="intro">Climb a dead tower of narrow platforms, flickering laser halls, and grammar locks. Every floor tests a different kind of word. Something is climbing after you.</p><div class="controls"><div><strong>A / D</strong> Move</div><div><strong>SPACE</strong> Jump</div><div><strong>W / ↑</strong> Jump</div><div><strong>1 – 3</strong> Choose an answer</div></div><button class="primary" id="startButton" type="button">Enter the tower</button><p class="tiny">Checkpoints save your climb. The tower remembers wrong answers.</p></div>
+  </section>
+  <section class="layer hidden" id="quizLayer" aria-live="polite"><div class="card quiz-card"><p class="eyebrow" id="quizEyebrow">Word lock · Floor 01</p><h2 id="quizTitle">Name that word.</h2><p class="prompt" id="quizPrompt"></p><div class="word-choices" id="wordChoices"></div><p class="quiz-note">Choose with a click or press 1, 2, or 3.</p></div></section>
+  <section class="layer hidden" id="endLayer"><div class="card"><p class="eyebrow">The tower goes quiet</p><h1>You made it<br>to the top.</h1><p class="intro">The words are yours again. For now.</p><button class="primary" id="replayButton" type="button">Climb again</button></div></section>
+  <div class="scare" id="scare" aria-hidden="true"><div class="flash"></div><svg viewBox="0 0 520 600" role="presentation"><defs><radialGradient id="head" cx="50%" cy="38%" r="62%"><stop stop-color="#d6d3cb"/><stop offset=".42" stop-color="#756b68"/><stop offset="1" stop-color="#181318"/></radialGradient><filter id="blur"><feGaussianBlur stdDeviation="11"/></filter></defs><ellipse cx="260" cy="330" rx="200" ry="260" fill="#e20b2a" opacity=".28" filter="url(#blur)"/><path d="M90 560 Q35 405 83 214 Q115 49 259 33 Q413 43 445 210 Q482 393 430 566 L368 600 142 600Z" fill="url(#head)" stroke="#d6c2ba" stroke-width="3"/><path d="M106 234 Q171 146 239 229 Q180 289 111 267Z" fill="#08050a"/><path d="M284 229 Q352 142 420 222 L414 266 Q340 291 284 229Z" fill="#08050a"/><ellipse cx="176" cy="238" rx="24" ry="15" fill="#ff203c"/><ellipse cx="349" cy="238" rx="24" ry="15" fill="#ff203c"/><circle cx="176" cy="238" r="8" fill="#fff0da"/><circle cx="349" cy="238" r="8" fill="#fff0da"/><path d="M153 390 Q257 332 369 394 L350 505 Q255 555 169 499Z" fill="#10090d" stroke="#a89c96" stroke-width="3"/><path d="M176 390L194 448 211 382 235 441 253 376 276 442 298 379 318 449 342 393 358 462" fill="none" stroke="#eee3d7" stroke-width="14" stroke-linejoin="miter"/><path d="M126 170 Q183 100 237 177 M282 174 Q344 99 403 163" fill="none" stroke="#21171b" stroke-width="22"/><path d="M260 278L239 339 271 330" fill="#27181d" stroke="#b2a49d" stroke-width="3"/><path d="M81 560 Q14 591 0 600 M430 562 Q493 585 520 600" fill="none" stroke="#7f1727" stroke-width="30"/></svg></div>
+</main>
+<script>
+(() => {
+  'use strict';
+  const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+  const W=960,H=640,WORLD_H=4160,GROUND=4050,TOP=80;
+  const cpY=[3370,2690,2010,1330,650];
+  const trials=[
+    {floor:'The Noun Wing',name:'A noun names a person, place, or thing.',prompt:'Which word is a noun?',choices:['swiftly','lantern','shivering'],answer:1},
+    {floor:'The Verb Galleries',name:'A verb is an action or a state of being.',prompt:'Which word is a verb?',choices:['whisper','pale','corridor'],answer:0},
+    {floor:'The Adjective Ward',name:'An adjective describes a noun.',prompt:'Which word is an adjective?',choices:['beneath','hollow','escape'],answer:1},
+    {floor:'The Adverb Shaft',name:'An adverb can describe how an action happens.',prompt:'Which word is an adverb?',choices:['carefully','footsteps','silver'],answer:0},
+    {floor:'The Sentence Chapel',name:'A complete sentence has a subject and a predicate.',prompt:'Which is a complete sentence?',choices:['Beyond the iron door.','The red lights are watching.','Running through the dark.'],answer:1}
+  ];
+  const platforms=[],lasers=[],checkpoints=[];
+  const player={x:105,y:GROUND-43,w:28,h:43,vx:0,vy:0,onGround:false,face:1};
+  let state='title',cameraY=0,keys={},last=0,elapsed=0,checkpointIndex=0,activeQuiz=-1,wrongAnswers=0,scareTimer=0,toastTimer=0,soundOn=true,audio=null,grace=0,particles=[];
+  const startLayer=document.getElementById('startLayer'),quizLayer=document.getElementById('quizLayer'),endLayer=document.getElementById('endLayer');
+  const floorChip=document.getElementById('floorChip'),checkpointChip=document.getElementById('checkpointChip'),progressText=document.getElementById('progressText'),progressFill=document.getElementById('progressFill'),toast=document.getElementById('toast');
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  cameraY=clamp(player.y-390,0,WORLD_H-H);
+  function addPlatform(x,y,w,type='steel'){platforms.push({x,y,w,h:16,type});}
+  addPlatform(35,GROUND,235,'start');
+  const routes=[[245,420,620,780,610,440],[690,520,315,155,330,500],[250,430,650,790,610,440],[700,535,340,155,335,500],[250,425,650,790,610,440]];
+  let lower=GROUND-10;
+  for(let i=0;i<5;i++){
+    const target=cpY[i],steps=6,dx=routes[i];
+    for(let j=0;j<steps;j++){
+      const y=lower-(target-lower)*(j+1)/(steps+1);
+      addPlatform(dx[j],y,112+(j%3===0?12:0),j%4===2?'rust':'steel');
+    }
+    addPlatform(380,target,200,'checkpoint');checkpoints.push({x:380,y:target,w:200,index:i});
+    lower=target-6;
+  }
+  // The final exposed climb to the exit.
+  [[430,550,108],[600,450,105],[735,350,110],[610,250,108],[430,170,112]].forEach(p=>addPlatform(p[0],p[1],p[2],p[1]===170?'gold':'steel'));
+  addPlatform(355,TOP+70,250,'exit');
+  // Lasers pulse across the shaft. Some lanes are wider, but every beam has a readable off cycle.
+  [[3710,180,600,0.2],[3040,260,600,1.1],[2350,140,680,2.0],[1680,250,620,.65],[990,150,690,1.6],[350,220,560,.1]].forEach((a,i)=>lasers.push({y:a[0],x:a[1],w:a[2],phase:a[3],period:3.1,activeFor:1.15,id:i}));
+  for(let i=0;i<90;i++)particles.push({x:Math.random()*W,y:Math.random()*WORLD_H,r:Math.random()*1.8+.3,s:Math.random()*10+3,a:Math.random()*.55+.12});
+  function setFloor(){
+    const idx=cpY.findIndex(y=>player.y>y-420);
+    const n=idx<0?5:idx;
+    floorChip.textContent=n<5?`Floor 0${n+1} · ${trials[n].floor}`:'The Crown · Exit above';
+    checkpointChip.textContent=`Checkpoint ${checkpointIndex} / 5`;
+  }
+  function updateHud(){const pct=clamp(Math.floor((GROUND-player.y)/(GROUND-(TOP+70))*100),0,100);progressText.textContent=pct+'%';progressFill.style.width=pct+'%';setFloor();}
+  function triggerScare(message='It found you.'){
+    scareTimer=.72;document.getElementById('scare').classList.add('show');showToast(message,1100);playScare();
+  }
+  function showToast(text,duration=1400){toast.textContent=text;toast.classList.add('show');toastTimer=duration/1000;}
+  function playScare(){if(!soundOn)return;try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const now=audio.currentTime;const osc=audio.createOscillator(),gain=audio.createGain(),filter=audio.createBiquadFilter();osc.type='sawtooth';osc.frequency.setValueAtTime(180,now);osc.frequency.exponentialRampToValueAtTime(42,now+.55);filter.type='lowpass';filter.frequency.setValueAtTime(1300,now);filter.frequency.exponentialRampToValueAtTime(180,now+.6);gain.gain.setValueAtTime(.001,now);gain.gain.exponentialRampToValueAtTime(.18,now+.04);gain.gain.exponentialRampToValueAtTime(.001,now+.65);osc.connect(filter).connect(gain).connect(audio.destination);osc.start(now);osc.stop(now+.68);}catch(_){}}
+  function openQuiz(i){if(i!==checkpointIndex||state!=='playing')return;state='quiz';activeQuiz=i;document.getElementById('quizEyebrow').textContent=`Word lock · Floor 0${i+1}`;document.getElementById('quizTitle').textContent=trials[i].floor;document.getElementById('quizPrompt').textContent=trials[i].prompt;const choices=document.getElementById('wordChoices');choices.innerHTML='';trials[i].choices.forEach((word,j)=>{const b=document.createElement('button');b.className='word-choice';b.type='button';b.innerHTML=`<span class="num">${j+1}</span><span>${word}</span>`;b.addEventListener('click',()=>answer(j));choices.appendChild(b);});quizLayer.classList.remove('hidden');}
+  function answer(choice){if(state!=='quiz')return;const q=trials[activeQuiz];if(choice===q.answer){checkpointIndex=activeQuiz+1;state='playing';quizLayer.classList.add('hidden');player.vy=0;showToast('LOCK RELEASED · CHECKPOINT SAVED',1600);updateHud();}else{wrongAnswers++;quizLayer.classList.add('hidden');state='playing';triggerScare('Wrong word. It heard you.');if(wrongAnswers%2===0)respawn(false);}}
+  function respawn(scary=true){player.x=checkpointIndex===0?105:440;player.y=checkpointIndex===0?GROUND-player.h-2:cpY[checkpointIndex-1]-player.h-2;player.vx=0;player.vy=0;grace=1.05;if(scary)triggerScare('The tower sends you back.');}
+  function collideLaser(){for(const l of lasers){const t=(elapsed+l.phase)%l.period;const active=t<l.activeFor;if(active&&player.x+player.w>l.x&&player.x<l.x+l.w&&player.y+player.h>l.y-5&&player.y<l.y+5){respawn(true);return true;}}return false;}
+  function update(dt){elapsed+=dt;if(scareTimer>0){scareTimer-=dt;if(scareTimer<=0)document.getElementById('scare').classList.remove('show');}if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)toast.classList.remove('show');}if(state!=='playing')return;grace=Math.max(0,grace-dt);
+    const left=keys.ArrowLeft||keys.KeyA,right=keys.ArrowRight||keys.KeyD,jump=keys.Space||keys.ArrowUp||keys.KeyW;
+    player.vx=(right?1:0)-(left?1:0);player.vx*=300;if(player.vx)player.face=Math.sign(player.vx);
+    player.x+=player.vx*dt;player.x=clamp(player.x,38,W-38-player.w);
+    const wasGround=player.onGround;player.onGround=false;
+    if(jump&&wasGround){player.vy=-610;player.onGround=false;}
+    player.vy=Math.min(player.vy+1510*dt,820);const oldBottom=player.y+player.h;player.y+=player.vy*dt;
+    if(player.vy>=0){for(const p of platforms){if(player.x+player.w>p.x&&player.x<p.x+p.w&&oldBottom<=p.y+3&&player.y+player.h>=p.y){player.y=p.y-player.h;player.vy=0;player.onGround=true;break;}}}
+    if(player.y>GROUND+200){respawn(true);}
+    if(grace===0)collideLaser();
+    if(checkpointIndex<5){const c=checkpoints[checkpointIndex];if(player.onGround&&player.x+player.w>c.x&&player.x<c.x+c.w&&Math.abs((player.y+player.h)-c.y)<2)openQuiz(checkpointIndex);}
+    if(player.y<TOP+113&&player.x+player.w>420&&player.x<540){state='won';endLayer.classList.remove('hidden');}
+    const target=clamp(player.y-390,0,WORLD_H-H);cameraY+=(target-cameraY)*Math.min(1,dt*5);updateHud();
+  }
+  function drawBackground(){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0b111c');g.addColorStop(.55,'#0b0e15');g.addColorStop(1,'#171017');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#090c13';ctx.fillRect(24,0,36,H);ctx.fillRect(900,0,36,H);ctx.strokeStyle='#303744';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(60,0);ctx.lineTo(60,H);ctx.moveTo(900,0);ctx.lineTo(900,H);ctx.stroke();
+    for(let x=100;x<900;x+=100){ctx.strokeStyle=x%200?'#151b25':'#1a202b';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(const p of particles){let sy=(p.y-cameraY*.35)%H;if(sy<0)sy+=H;ctx.globalAlpha=p.a*(.7+.3*Math.sin(elapsed*p.s+p.x));ctx.fillStyle='#c5d0d8';ctx.fillRect(p.x,sy,p.r,p.r);}ctx.globalAlpha=1;
+    // Cold vertical lights in the concrete shaft.
+    for(let i=0;i<5;i++){const x=155+i*165;ctx.fillStyle=`rgba(103,244,226,${.018+.012*Math.sin(elapsed*1.6+i)})`;ctx.fillRect(x,0,2,H);}
+  }
+  function drawPlatforms(){for(const p of platforms){const sy=p.y-cameraY;if(sy<-28||sy>H+28)continue;let fill='#252b35',edge='#87919b';if(p.type==='rust'){fill='#332322';edge='#c17758';}if(p.type==='checkpoint'){fill='#172d30';edge='#75f1dc';}if(p.type==='start'){fill='#272c35';edge='#c7b475';}if(p.type==='gold'){fill='#363024';edge='#f0d585';}if(p.type==='exit'){fill='#252925';edge='#f2e3a5';}
+      ctx.fillStyle=fill;ctx.fillRect(p.x,sy,p.w,p.h);ctx.fillStyle=edge;ctx.fillRect(p.x,sy,p.w,3);ctx.fillStyle='#080a0e';ctx.fillRect(p.x+8,sy+p.h,p.w-16,5);
+      if(p.type==='checkpoint'){ctx.save();ctx.shadowColor='#57e9d7';ctx.shadowBlur=15;ctx.strokeStyle='#83fff0';ctx.lineWidth=1;ctx.strokeRect(p.x+8,sy+4,p.w-16,7);ctx.restore();}
+      if(p.type==='exit'){ctx.fillStyle='#c3b67b';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('THE CROWN',p.x+p.w/2,sy-8);}
+    }}
+  function drawLasers(){for(const l of lasers){const sy=l.y-cameraY;if(sy<-20||sy>H+20)continue;const phase=(elapsed+l.phase)%l.period,active=phase<l.activeFor,fade=active?1:.16;ctx.save();ctx.globalAlpha=fade;ctx.shadowColor='#ff2e49';ctx.shadowBlur=active?22:4;ctx.strokeStyle=active?'#ff354e':'#8e2837';ctx.lineWidth=active?4:2;ctx.beginPath();ctx.moveTo(l.x,sy);ctx.lineTo(l.x+l.w,sy);ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle=active?'#ff7785':'#85404b';for(const x of [l.x,l.x+l.w]){ctx.fillRect(x-8,sy-13,16,27);ctx.fillStyle='#1a2029';ctx.fillRect(x-4,sy-9,8,19);ctx.fillStyle=active?'#ff7785':'#85404b';}if(active){ctx.globalAlpha=.08;ctx.fillStyle='#ff2540';ctx.fillRect(l.x,sy-10,l.w,20);}ctx.restore();}}
+  function drawSigns(){for(let i=0;i<5;i++){const y=cpY[i]-145,sy=y-cameraY;if(sy<-50||sy>H+50)continue;ctx.fillStyle='#10151d';ctx.fillRect(72,sy-23,245,49);ctx.strokeStyle='#4a515d';ctx.strokeRect(72,sy-23,245,49);ctx.fillStyle='#d4d9de';ctx.textAlign='left';ctx.font='10px system-ui';ctx.fillText(`FLOOR 0${i+1}  /  ${trials[i].floor.toUpperCase()}`,84,sy-4);ctx.fillStyle='#828d9b';ctx.font='9px system-ui';ctx.fillText('WORD LOCK AHEAD',84,sy+13);}}
+  function drawPlayer(){const x=player.x,y=player.y-cameraY;ctx.save();if(grace>0&&Math.floor(elapsed*16)%2)ctx.globalAlpha=.45;ctx.translate(x+player.w/2,y+player.h/2);ctx.scale(player.face,1);ctx.shadowColor='#52d9cf';ctx.shadowBlur=14;ctx.fillStyle='#c6e2dd';ctx.fillRect(-10,-13,20,24);ctx.shadowBlur=0;ctx.fillStyle='#d2d8d6';ctx.beginPath();ctx.arc(0,-17,9,0,Math.PI*2);ctx.fill();ctx.fillStyle='#141b22';ctx.fillRect(1,-19,6,3);ctx.fillStyle='#a3474a';ctx.fillRect(-8,11,6,10);ctx.fillRect(3,11,6,10);ctx.strokeStyle='#d8deda';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-8,-5);ctx.lineTo(-15,5);ctx.moveTo(8,-5);ctx.lineTo(14,1);ctx.stroke();ctx.restore();}
+  function draw(){ctx.clearRect(0,0,W,H);drawBackground();drawSigns();drawPlatforms();drawLasers();drawPlayer();if(state==='title'){ctx.fillStyle='#07091022';ctx.fillRect(0,0,W,H);}}
+  function frame(now){const dt=Math.min((now-last)/1000||0,.033);last=now;update(dt);draw();requestAnimationFrame(frame);}
+  function begin(){if(state!=='title')return;state='playing';startLayer.classList.add('hidden');try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();audio.resume();}catch(_){} }
+  function restart(){checkpointIndex=0;wrongAnswers=0;player.x=105;player.y=GROUND-player.h;player.vx=player.vy=0;state='playing';endLayer.classList.add('hidden');updateHud();}
+  document.getElementById('startButton').addEventListener('click',begin);document.getElementById('replayButton').addEventListener('click',restart);
+  document.getElementById('soundButton').addEventListener('click',e=>{soundOn=!soundOn;e.currentTarget.textContent=`SOUND: ${soundOn?'ON':'OFF'}`;});
+  window.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp','Space'].includes(e.code))e.preventDefault();keys[e.code]=true;if(state==='title'&&(e.code==='Enter'||e.code==='Space'))begin();if(state==='quiz'&&/^Digit[1-3]$/.test(e.code))answer(Number(e.code.slice(-1))-1);});
+  window.addEventListener('keyup',e=>{keys[e.code]=false;});window.addEventListener('blur',()=>{keys={};});
+  updateHud();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
